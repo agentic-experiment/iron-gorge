@@ -1,0 +1,88 @@
+# Iron Gorge
+
+A one-axis arcade dive through a canyon that breathes. You are a small light
+in a gorge of cold iron. Drift between the walls, drink the embers, and fall
+as deep as you can before the rock takes you.
+
+Everything is a single static `index.html` — no build step, no server, no
+external fonts, images, libraries, or network calls. It is ready to be served
+as-is by GitHub Pages.
+
+## Step-by-step reasoning
+
+1. **Constraints first.** GitHub Pages only serves static files. That ruled out
+   backends, build tooling, and anything requiring a package manager at runtime.
+   I also avoided external CDNs and web fonts so the game works offline after
+   the first load and cannot break because a dependency moved.
+
+2. **Find a shape for the game.** "Iron Gorge" suggests a canyon, pressure, and
+   something metallic. A conventional platformer or shooter would need much more
+   content, art, and tuning. A one-axis "thread the needle" game gives immediate
+   tension from a single input axis, which also makes it work equally well with
+   keyboard and touch.
+
+3. **Core loop.** The world scrolls upward continuously. The player can only
+   move left and right. Touching either wall ends the run. Embers spawn in the
+   corridor and give bonus points. Score is distance plus collected embers, and
+   a local best score makes the loop worth repeating.
+
+4. **Procedural terrain instead of authored levels.** The gorge is the sum of
+   three sine waves for its centerline plus a second breathing wave for its
+   width. That is intentionally cheap: no noise library, no tilemaps, no assets,
+   and it is infinitely long. The same two functions drive both rendering and
+   collision, so what you see is exactly what kills you. Difficulty is a smooth
+   function of depth: the walls narrow and the scroll speed rises, capped so the
+   run stays controllable.
+
+5. **Collision at one row.** The player's screen height is fixed, so collision
+   only needs to sample the corridor at that row. The drawn edge is sampled more
+   densely for curvature, but both use the same math. A small forgiveness margin
+   keeps near-misses from feeling arbitrary. Embers gently curve toward the
+   player when close, because the collection arc is more satisfying than precise
+   pixel contact.
+
+6. **Feel before features.** Horizontal movement uses velocity smoothing rather
+   than direct position assignment. Keyboard input accelerates toward a target
+   speed; pointer input accelerates toward the held position. This makes the orb
+   feel heavy and deliberate instead of twitchy. Touch and mouse share the same
+   "hold and drag" model.
+
+7. **The look.** Cold dark iron, a molten rim, and a warm core. The palette is
+   nearly black with rust, gold, and one cool blue accent in the distance. The
+   shelf strata inside the walls are clipped to the terrain and scroll with it,
+   which sells depth without any textures. Background dust, ember glow, a player
+   trail, burst particles, a screen-shake on death, and a CSS vignette/scanline
+   overlay do the rest. The visuals avoid raster assets entirely, so they stay
+   sharp at any resolution and device pixel ratio.
+
+8. **Sound.** All audio is synthesized with the Web Audio API: a quiet filtered
+   drone, a rising blip for each ember, and a filtered noise burst plus sub-bass
+   thud on death. The context is created only after a user gesture, as browsers
+   require. `M` or the `SND` button mutes everything.
+
+9. **States and interface.** Three states — menu, playing, dead — share one
+   render loop. The menu and game-over screens are DOM overlays over the live
+   canvas, which keeps text crisp and styling simple. The HUD shows score, depth,
+   ember count, and best. Best score is stored in `localStorage` inside a
+   `try/catch`, because private browsing modes can throw on storage access.
+
+10. **Robustness.** The canvas is scaled for device pixel ratio; layout is
+    recomputed on resize; frame delta is clamped so a background tab does not
+    teleport the player into a wall; blur clears held keys; touch gestures are
+    suppressed so dragging steers instead of scrolling. Reduced-motion users get
+    no screen shake or scanlines.
+
+11. **Deliberate omissions.** No framework, no bundler, no asset pipeline, no
+    levels, no inventory, no settings screen, no backend leaderboard. Each would
+    add files or failure modes without making the first minute of play better.
+    The whole game is one HTML file plus this explanation. The math is kept
+    simple enough to read at 3am, and the tuning constants sit together near the
+    top of the script.
+
+12. **Verification.** The inline script was syntax-checked with Node. It was also
+    executed against a stubbed DOM/canvas harness for several simulated minutes
+    of play, including movement, ember collection, death, restart, resize, and
+    pointer steering, with no runtime errors. Visual output is generated entirely
+    from the canvas drawing calls in the file.
+
+Generated by opencode/big-pickle
